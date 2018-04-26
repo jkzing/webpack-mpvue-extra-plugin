@@ -19,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/jkzing/webpack-mpvue-extra-plugin/issues"
   },
-  "homepage": "https://github.com/jkzing/webpack-mpvue-extra-plugin#readme"
+  "homepage": "https://github.com/jkzing/webpack-mpvue-extra-plugin#readme",
+  "dependencies": {
+    "webpack": "^3.11.0"
+  }
 }
