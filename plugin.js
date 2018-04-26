@@ -5,18 +5,22 @@ const SingleEntryDependency = require('webpack/lib/dependencies/SingleEntryDepen
 // const MultiEntryDependency = require('webpack/lib/dependencies/MultiEntryDependency')
 
 module.exports = class MpvueExtraPlugin {
-  constructor() {
+  constructor(options = {}) {
+    this.rawPluginConfig = options.pluginConfig || null
     this.entries = {}
   }
 
   resolvePluginConfig(options = {}) {
-    const { entry, context } = options
-    const configPath = path.isAbsolute(entry)
-      ? entry
-      : path.join(context, entry)
-
-    const pluginConfig = require(path.resolve(context, entry)) || {}
-    const publicComponents = pluginConfig.publicComponents || []
+    if (!this.rawPluginConfig) {
+      // 没有传入plugin config时从entry加载
+      const { entry, context } = options
+      const configPath = path.isAbsolute(entry)
+        ? entry
+        : path.join(context, entry)
+      const pluginConfig = require(path.resolve(context, entry)) || {}
+      this.rawPluginConfig = pluginConfig
+    }
+    const publicComponents = this.rawPluginConfig.publicComponents || []
 
     for (const pc of Object.values(publicComponents)) {
       this.entries[pc] = path.resolve('src', pc + '.js')
@@ -56,6 +60,19 @@ module.exports = class MpvueExtraPlugin {
         Object.keys(this.entries)
           .map(name => addEntry(this.entries[name], name))
       ).then(() => next(), next)
+    })
+
+    compiler.plugin('emit', (compilation, next) => {
+      const pluginConfigContent = JSON.stringify(this.rawPluginConfig)
+      compilation.assets['plugin.json'] = {
+        source() {
+          return pluginConfigContent
+        },
+        size() {
+          return pluginConfigContent.length
+        }
+      }
+      next()
     })
   }
 
