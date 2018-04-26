@@ -4,6 +4,19 @@ const SingleEntryPlugin = require('webpack/lib/SingleEntryPlugin')
 const SingleEntryDependency = require('webpack/lib/dependencies/SingleEntryDependency')
 // const MultiEntryDependency = require('webpack/lib/dependencies/MultiEntryDependency')
 
+const genAsset = (code) => ({
+  source() {
+    return code
+  },
+  size() {
+    return code.length
+  }
+})
+
+const COMPONENT_JSON_CONTENT = JSON.stringify({
+  component: true
+})
+
 module.exports = class MpvueExtraPlugin {
   constructor(options = {}) {
     this.rawPluginConfig = options.pluginConfig || null
@@ -63,15 +76,15 @@ module.exports = class MpvueExtraPlugin {
     })
 
     compiler.plugin('emit', (compilation, next) => {
+      // 生成plugin.json
       const pluginConfigContent = JSON.stringify(this.rawPluginConfig)
-      compilation.assets['plugin.json'] = {
-        source() {
-          return pluginConfigContent
-        },
-        size() {
-          return pluginConfigContent.length
-        }
-      }
+      compilation.assets['plugin.json'] = genAsset(pluginConfigContent)
+
+      // 给每个publicComponent生成一个.json文件
+      Object.keys(this.entries)
+        .forEach(name => {
+          compilation.assets[`${name}.json`] = genAsset(COMPONENT_JSON_CONTENT)
+        })
       next()
     })
   }
