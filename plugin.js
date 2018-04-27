@@ -19,18 +19,20 @@ const COMPONENT_JSON_CONTENT = JSON.stringify({
 
 module.exports = class MpvueExtraPlugin {
   constructor(options = {}) {
-    this.rawPluginConfig = options.pluginConfig || null
+    this.pluginConfigPath = options.pluginConfigPath
+    this.rawPluginConfig = null
+    this.componentEntries = {}
     this.entries = {}
   }
 
   resolvePluginConfig(options = {}) {
     if (!this.rawPluginConfig) {
-      // 没有传入plugin config时从entry加载
       const { entry, context } = options
-      const configPath = path.isAbsolute(entry)
-        ? entry
-        : path.join(context, entry)
-      const pluginConfig = require(path.resolve(context, entry)) || {}
+      let pluginConfigPath = entry || this.pluginConfigPath
+      pluginConfigPath = path.isAbsolute(pluginConfigPath)
+        ? pluginConfigPath
+        : path.join(context, pluginConfigPath)
+      const pluginConfig = require(pluginConfigPath) || {}
       this.rawPluginConfig = pluginConfig
     }
 
@@ -38,7 +40,7 @@ module.exports = class MpvueExtraPlugin {
     const { publicComponents = [], main } = this.rawPluginConfig
 
     for (const pc of Object.values(publicComponents)) {
-      this.entries[pc] = path.resolve('src', pc + '.js')
+      this.entries[pc] = this.componentEntries[pc] = path.resolve('src', pc + '.js')
     }
 
     if (main) {
@@ -51,11 +53,11 @@ module.exports = class MpvueExtraPlugin {
     this.resolvePluginConfig(compiler.options)
 
     compiler.plugin('after-resolvers', compiler => {
-      // 魔改compiler.options.entry
-      // 因为mpvue-loader要根据entry的内容做判断
+      // FIXME: 魔改compiler.options.entry
+      // 因为mpvue-loader要根据entry的内容做判断是否需要编译
       // 最好去改下mpvue-loader的代码
-
-      compiler.options.entry = { ...this.entries }
+      // 这里只把component相关的entries放进去
+      compiler.options.entry = { ...this.componentEntries }
     })
 
     compiler.plugin('compilation', (compilation, { normalModuleFactory }) => {
