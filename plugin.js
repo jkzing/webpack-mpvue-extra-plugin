@@ -26,8 +26,8 @@ module.exports = class MpvueExtraPlugin {
   }
 
   resolvePluginConfig(options = {}) {
+    const { entry, context } = options
     if (!this.rawPluginConfig) {
-      const { entry, context } = options
       let pluginConfigPath = entry || this.pluginConfigPath
       pluginConfigPath = path.isAbsolute(pluginConfigPath)
         ? pluginConfigPath
@@ -40,12 +40,12 @@ module.exports = class MpvueExtraPlugin {
     const { publicComponents = [], main } = this.rawPluginConfig
 
     for (const pc of Object.values(publicComponents)) {
-      this.entries[pc] = this.componentEntries[pc] = path.resolve('src', pc + '.js')
+      this.entries[pc] = this.componentEntries[pc] = path.join(context, pc + '.js')
     }
 
     if (main) {
       // 增加api入口构建
-      this.entries[PLUGIN_MAIN_ENTRY] = path.resolve('src', main)
+      this.entries[PLUGIN_MAIN_ENTRY] = path.join(context, main)
     }
   }
 
@@ -68,7 +68,7 @@ module.exports = class MpvueExtraPlugin {
     })
 
     compiler.plugin('make', (compilation, next) => {
-      const context = path.resolve()
+      const context = compilation.options.context
       // promisify addEntry
       const addEntry = (entry, name) => {
         return new Promise((resolve, reject) => {
