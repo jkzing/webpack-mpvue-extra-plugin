@@ -17,7 +17,7 @@ module.exports = class MpvueExtraPlugin {
       compilation.chunks
         .filter(c => pageReg.test(c.name))
         .forEach(pc => {
-          const entryResource = pc.entryModule.resource
+          const entryResource = pc.entryModule.resource || pc.entryModule.rootModule.resource
           const info = path.parse(entryResource)
           const jsonFile = path.join(info.dir, info.name + '.json')
           let content = JSON.stringify({})
